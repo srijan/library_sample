@@ -1,9 +1,7 @@
-library
-=====
+library_sample
+==============
 
-An OTP application
+A sample project to demonstrate the functionality of xref to find inter-app
+function calls.
 
-Build
------
-
-    $ rebar3 compile
+For more details, check the blog post: https://www.srijn.net/erlang-find-cross-app-calls-using-xref/
