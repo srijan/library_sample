@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+
+env:
+  OTP_VERSION: "25.0.2"
+  REBAR3_VERSION: "3.18.0"
+
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Erlang
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ env.OTP_VERSION }}
+        rebar3-version: ${{ env.REBAR3_VERSION }}
+    - name: Deps cache
+      id: cache-deps
+      uses: actions/cache@v3
+      with:
+        path: _build
+        key: ${{ runner.os }}-${{ env.OTP_VERSION }}-deps-${{ hashFiles('**/rebar.lock') }}
+        restore-keys: ${{ runner.os }}-${{ env.OTP_VERSION }}-deps-
+    - name: Setup problem matchers
+      run: echo "::add-matcher::.github/erlang-matchers.json"
+    - name: Compile
+      run: rebar3 compile
+    # - name: Xref
+    #   run: rebar3 xref
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Erlang
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ env.OTP_VERSION }}
+        rebar3-version: ${{ env.REBAR3_VERSION }}
+    - name: Deps cache
+      id: cache-deps
+      uses: actions/cache@v3
+      with:
+        # Workaround for #actions/cache/494
+        path: |
+          _build/*/*
+          !_build/test/logs
+        key: ${{ runner.os }}-${{ env.OTP_VERSION }}-test-${{ hashFiles('**/rebar.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ env.OTP_VERSION }}-test-
+          ${{ runner.os }}-${{ env.OTP_VERSION }}-deps-
+    - name: Eunit
+      run: |
+        mkdir eunit_results
+        rebar3 eunit
+    - name: CT
+      if: always()
+      run: rebar3 ct
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results
+        path: eunit_results/*.xml,_build/test/logs/last/junit_report.xml
+        reporter: java-junit
+        only-summary: 'true'
