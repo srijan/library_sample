@@ -73,7 +73,9 @@ jobs:
     - name: CT
       if: always()
       run: rebar3 ct
+
     - name: Test Report
+      id: test-results
       uses: EnricoMi/publish-unit-test-result-action@v1
       if: always()
       with:
@@ -84,3 +86,28 @@ jobs:
         comment_mode: always
         check_run_annotations: all tests, skipped tests
         compare_to_earlier_commit: false
+    - name: Set badge color
+      if: always()
+      run: |
+        case ${{ fromJSON( steps.test-results.outputs.json ).conclusion }} in
+          success)
+            echo "BADGE_COLOR=31c653" >> $GITHUB_ENV
+            ;;
+          failure)
+            echo "BADGE_COLOR=800000" >> $GITHUB_ENV
+            ;;
+          neutral)
+            echo "BADGE_COLOR=696969" >> $GITHUB_ENV
+            ;;
+        esac
+    - name: Create badge
+      if: always()
+      uses: schneegans/dynamic-badges-action@v1
+      with:
+        auth: ${{ secrets.GIST_BADGE_SECRET }}
+        gistID: ef3a1231bf9a8ae42e7b4298edcffdc4
+        filename: tests.json
+        label: Tests
+        message: '${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.tests }} tests, ${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.runs }} runs: ${{ fromJSON( steps.test-results.outputs.json ).conclusion }}'
+        color: ${{ env.BADGE_COLOR }}
+
