@@ -102,7 +102,7 @@ jobs:
         esac
     - name: Create badge
       if: always()
-      uses: schneegans/dynamic-badges-action@v1
+      uses: schneegans/dynamic-badges-action@v1.4.0
       with:
         auth: ${{ secrets.GIST_BADGE_SECRET }}
         gistID: ef3a1231bf9a8ae42e7b4298edcffdc4
