@@ -86,18 +86,21 @@ jobs:
         comment_mode: always
         check_run_annotations: all tests, skipped tests
         compare_to_earlier_commit: false
-    - name: Set badge color
+    - name: Set badge color and message
+      id: badge-data
       if: always()
       run: |
+        passed=${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.runs_succ }}
+        total=${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.runs }}
+        not_passed=$((total-passed))
         case ${{ fromJSON( steps.test-results.outputs.json ).conclusion }} in
           success)
-            echo "BADGE_COLOR=31c653" >> $GITHUB_ENV
+            echo "::set-output name=color::31c653"
+            echo "::set-output name=message::$passed tests passed"
             ;;
-          failure)
-            echo "BADGE_COLOR=800000" >> $GITHUB_ENV
-            ;;
-          neutral)
-            echo "BADGE_COLOR=696969" >> $GITHUB_ENV
+          *)
+            echo "::set-output name=color::800000"
+            echo "::set-output name=message::$not_passed/$total tests didn't pass"
             ;;
         esac
     - name: Create badge
@@ -108,7 +111,6 @@ jobs:
         gistID: ef3a1231bf9a8ae42e7b4298edcffdc4
         filename: tests.json
         label: Tests
-        # message: '${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.tests }} tests, ${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.runs }} runs: ${{ fromJSON( steps.test-results.outputs.json ).conclusion }}'
-        message: '${{ fromJSON( steps.test-results.outputs.json ).title }}'
-        color: ${{ env.BADGE_COLOR }}
+        message: '${{ steps.badge-data.message }}'
+        color: ${{ steps.badge-data.color }}
 
