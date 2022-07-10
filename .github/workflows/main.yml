@@ -111,6 +111,6 @@ jobs:
         gistID: ef3a1231bf9a8ae42e7b4298edcffdc4
         filename: tests.json
         label: Tests
-        message: '${{ steps.badge-data.message }}'
-        color: ${{ steps.badge-data.color }}
+        message: '${{ steps.badge-data.outputs.message }}'
+        color: ${{ steps.badge-data.outputs.color }}
 
